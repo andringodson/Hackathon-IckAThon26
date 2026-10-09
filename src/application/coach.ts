@@ -2,7 +2,7 @@ import { HOBBIES } from '@/domain/catalog';
 import { localRecommendations, rankHobbies, type CoachAnswers } from '@/domain/ranking';
 import type { Hobby, Recommendation } from '@/domain/types';
 
-import { parseCoachResponse, type CoachRequest } from '@/domain/coach-schema';
+import { parseCoachResponse, salvageCoachResponse, type CoachRequest } from '@/domain/coach-schema';
 
 export type InvokeCoach = (body: CoachRequest, candidates: Hobby[]) => Promise<unknown>;
 
@@ -39,18 +39,19 @@ export async function getRecommendations(
       company: answers.company,
       skill: answers.skill,
     }, candidates);
-    const suggestions = parseCoachResponse(data, candidates.map((h) => h.id));
-    if (!suggestions) throw new Error('invalid');
-    return {
-      recommendations: suggestions.map((s) => ({
-        hobby: byId.get(s.hobbyId)!,
-        reason: s.reason,
-        starterTask: s.starterTask,
-        steps: s.steps,
-        source: 'ai' as const,
-      })),
-      fallbackReason: null,
-    };
+    const ids = candidates.map((h) => h.id);
+    const suggestions = parseCoachResponse(data, ids) ?? salvageCoachResponse(data, ids);
+    if (!suggestions.length) throw new Error('invalid');
+    const ai: Recommendation[] = suggestions.map((s) => ({
+      hobby: byId.get(s.hobbyId)!,
+      reason: s.reason,
+      starterTask: s.starterTask,
+      steps: s.steps,
+      source: 'ai' as const,
+    }));
+    // A partly usable reply (say, a repeated hobby) keeps its good picks and tops up from the local ranking.
+    const topUp = local.filter((r) => !ai.some((a) => a.hobby.id === r.hobby.id));
+    return { recommendations: [...ai, ...topUp].slice(0, 3), fallbackReason: null };
   } catch {
     return {
       recommendations: local,

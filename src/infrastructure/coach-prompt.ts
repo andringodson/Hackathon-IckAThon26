@@ -2,7 +2,7 @@ import type { CoachRequest } from '@/domain/coach-schema';
 import type { Hobby } from '@/domain/types';
 
 const SYSTEM = `You are STILL's hobby coach for students and young adults who want to scroll less.
-Choose exactly three different hobbies from the candidates, using only their ids.
+Choose exactly three different hobbies from the candidates, using only their ids. Use each id at most once.
 For each, write:
 - reason: one warm, specific sentence saying why it suits this person, mentioning what they told you.
 - starterTask: a concrete first task that fits in their available minutes.
@@ -39,9 +39,9 @@ export function coachSchema(ids: string[]) {
           type: 'object',
           properties: {
             hobbyId: { type: 'string', enum: ids },
-            reason: { type: 'string', minLength: 20, maxLength: 220 },
+            reason: { type: 'string', minLength: 20, maxLength: 200 },
             starterTask: { type: 'string', minLength: 8, maxLength: 100 },
-            steps: { type: 'array', minItems: 2, maxItems: 3, items: { type: 'string', minLength: 4, maxLength: 100 } },
+            steps: { type: 'array', minItems: 2, maxItems: 3, items: { type: 'string', minLength: 4, maxLength: 80 } },
           },
           required: ['hobbyId', 'reason', 'starterTask', 'steps'],
           additionalProperties: false,

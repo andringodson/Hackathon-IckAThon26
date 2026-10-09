@@ -7,6 +7,7 @@ import { useAiModels } from '@/application/ai-model';
 import { getRecommendations } from '@/application/coach';
 import { useActions, useStore } from '@/application/store';
 import { AiCoachCard } from '@/components/ai-coach-card';
+import { CoachBuddy } from '@/components/coach-buddy';
 import { HobbyRow, RecommendationCard } from '@/components/hobby';
 import { QUIZ, answerText } from '@/components/quiz';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,15 @@ export default function Discover() {
   useEffect(() => {
     if (aiOn) preload(p.aiModel);
   }, [aiOn, p.aiModel]);
+
+  // Right after the model becomes ready, personalise what is on screen once instead of waiting for a tap.
+  const autoRan = useRef(false);
+  useEffect(() => {
+    if (!aiOn || step !== null || autoRan.current) return;
+    autoRan.current = true;
+    void suggest(answers, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiOn, step]);
 
   // On-device ranking answers instantly; the AI then rewrites the same kind of picks in the background.
   async function suggest(a: CoachAnswers, exclude: string[]) {
@@ -150,6 +160,8 @@ export default function Discover() {
             ) : null}
             <Button variant="quiet" label="Change my answers" icon={SlidersHorizontal} onPress={() => setStep(0)} />
           </View>
+
+          {aiOn ? <CoachBuddy /> : null}
 
           {aiOn ? <AiCoachCard /> : null}
 

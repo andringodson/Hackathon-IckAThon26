@@ -94,20 +94,68 @@ export function preload(m: AiModel) {
     .catch(() => {});
 }
 
+// A phone can only run one completion per context, and a stuck one must not freeze "Personalising…" forever.
+const GENERATION_TIMEOUT_MS = 90_000;
+let queue: Promise<unknown> = Promise.resolve();
+
 export function localCoach(m: AiModel): InvokeCoach {
-  return async (request, candidates) => {
+  return (request, candidates) => {
+    const run = async () => {
+      const ctx = await context(m);
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => {
+          // Reject only once generation has really stopped, so the next queued request starts on a free context.
+          ctx.stopCompletion().catch(() => {}).finally(() => reject(new Error('timeout')));
+        }, GENERATION_TIMEOUT_MS);
+      });
+      const generate = ctx
+        .completion({
+          messages: buildCoachPrompt(request, candidates),
+          jinja: true,
+          enable_thinking: false,
+          reasoning_format: 'none',
+          // Grammar-constrained: the model can only emit JSON that fits the schema and the candidate ids.
+          response_format: { type: 'json_schema', json_schema: { strict: true, schema: coachSchema(candidates.map((c) => c.id)) } },
+          n_predict: 640,
+          temperature: 0.6,
+          top_p: 0.9,
+        })
+        .then((result) => JSON.parse(result.content || result.text) as unknown);
+      try {
+        return await Promise.race([generate, timeout]);
+      } finally {
+        clearTimeout(timer);
+      }
+    };
+    // Chain behind any earlier request; a failure there must not block this one.
+    const next = queue.catch(() => {}).then(run);
+    queue = next;
+    return next;
+  };
+}
+
+const BUDDY_SYSTEM = `You are STILL's coach buddy: a warm, upbeat friend helping a young person scroll less and try small hobbies.
+Reply in at most three short sentences. Be concrete, suggest one tiny next step, never shame, no medical advice.`;
+
+export type BuddyTurn = { role: 'user' | 'assistant'; content: string };
+
+/** Free-text chat with the on-device model. Shares the one-at-a-time queue with the suggestion coach. */
+export function askBuddy(m: AiModel, history: BuddyTurn[]): Promise<string> {
+  const run = async () => {
     const ctx = await context(m);
     const result = await ctx.completion({
-      messages: buildCoachPrompt(request, candidates),
+      messages: [{ role: 'system', content: BUDDY_SYSTEM }, ...history.slice(-8)],
       jinja: true,
       enable_thinking: false,
       reasoning_format: 'none',
-      // Grammar-constrained: the model can only emit JSON that fits the schema and the candidate ids.
-      response_format: { type: 'json_schema', json_schema: { strict: true, schema: coachSchema(candidates.map((c) => c.id)) } },
-      n_predict: 420,
-      temperature: 0.6,
+      n_predict: 160,
+      temperature: 0.7,
       top_p: 0.9,
     });
-    return JSON.parse(result.content || result.text);
+    return (result.content || result.text || '').trim();
   };
+  const next = queue.catch(() => {}).then(run);
+  queue = next;
+  return next;
 }

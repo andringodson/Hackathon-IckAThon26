@@ -17,3 +17,7 @@ export const preload = (_m: AiModel) => {};
 export const localCoach = (_m: AiModel): InvokeCoach => async () => {
   throw new Error('Not available on the web');
 };
+export type BuddyTurn = { role: 'user' | 'assistant'; content: string };
+export const askBuddy = async (_m: AiModel, _h: BuddyTurn[]): Promise<string> => {
+  throw new Error('Not available on the web');
+};
