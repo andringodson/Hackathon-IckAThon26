@@ -54,6 +54,11 @@
   },
   "private": true,
   "jest": {
-    "preset": "jest-expo"
+    "preset": "jest-expo",
+    "globalSetup": "<rootDir>/test/global-setup.js",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/supabase/"
+    ]
   }
 }
