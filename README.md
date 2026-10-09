@@ -17,6 +17,25 @@ STILL helps students and young adults swap unplanned scrolling for small, real h
 
 Built by Team Phantom Troupe for **Ick-a-thon 2026** (IEEE WIE, SSN) on the problem *"Doomscrolling steals youth's free time, with no easy way out."*
 
+## Tech stack
+
+| Layer | Technology |
+| --- | --- |
+| App framework | React Native 0.86 + **Expo SDK 57**, new architecture, React 19.2, React Compiler |
+| Language | **TypeScript 6** in strict mode |
+| Navigation | **Expo Router 57**: file-based routes, a custom 5-tab bar with Start in the centre, native stack transitions |
+| UI and design | Design tokens in `src/theme/tokens.ts`, **Instrument Serif** display font with system font for body, **Lucide** icons, **react-native-svg** |
+| Motion | **Reanimated 4** (press scale 0.97, fade and lift on entry, ease-out under 300 ms, Reduce Motion respected), **expo-haptics** |
+| Themes | Light, dark with true black for OLED, or follow the phone |
+| AI coach | **Qwen3.5 2B / 0.8B** (Apache 2.0) on the phone via **llama.cpp** (**llama.rn**), JSON-schema-constrained output. Free, offline, private, no API key |
+| Recommendations | Deterministic on-device ranking: time, budget, place, company, skill, materials |
+| Local data | **AsyncStorage** (offline-first store), **expo-secure-store** (login tokens), **expo-file-system** (model downloads) |
+| Backend (optional) | **Supabase**: PostgreSQL, Auth, row-level security, SQL functions for friends, leaderboards and challenges |
+| Notifications | **expo-notifications**: daily nudges and the timer-done alert |
+| Testing | **Jest** + jest-expo (unit), **PGlite** (Postgres in WASM: migrations and access rules), **Playwright** (full app journey, dark and light) |
+| Code quality | ESLint (eslint-config-expo), `tsc`, `expo-doctor` |
+| CI/CD | **GitHub Actions**: checks on every push, PR and nightly; Android APK published to GitHub Releases on every push |
+
 ## Install on your phone
 
 **Android:** download `STILL.apk` from the [latest release](../../releases/tag/latest), open it, and allow installs from your browser or files app when asked. Every push to `main` rebuilds it.
