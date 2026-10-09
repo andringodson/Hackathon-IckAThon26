@@ -7,8 +7,10 @@
     "@expo/ui": "~57.0.22",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@supabase/supabase-js": "^2.117.3",
+    "eslint-config-expo": "~57.0.2",
     "expo": "~57.0.27",
     "expo-constants": "~57.0.21",
+    "expo-crypto": "~57.0.3",
     "expo-device": "~57.0.2",
     "expo-font": "~57.0.4",
     "expo-glass-effect": "~57.0.4",
@@ -38,7 +40,10 @@
   "devDependencies": {
     "@testing-library/react-native": "^14.1.0",
     "@types/jest": "29.5.14",
+    "@types/node": "~26.6.4",
     "@types/react": "~19.2.2",
+    "eslint": "^9.39.5",
+    "eslint-config-expo": "~57.0.2",
     "jest": "~29.7.0",
     "jest-expo": "~57.0.5",
     "typescript": "~6.0.3"
@@ -59,6 +64,12 @@
     "testPathIgnorePatterns": [
       "/node_modules/",
       "/supabase/"
-    ]
+    ],
+    "setupFiles": [
+      "<rootDir>/test/setup.js"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1"
+    }
   }
 }
