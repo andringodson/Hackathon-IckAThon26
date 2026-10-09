@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Compass, Play, Settings } from 'lucide-react-native';
+import { Compass, Play, Settings, Sparkles } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { View } from 'react-native';
 
@@ -71,6 +71,7 @@ export default function Home() {
               }}
             />
             <Button variant="secondary" label="Find something to do" icon={Compass} onPress={() => router.push('/discover')} />
+            <Button variant="quiet" label="Ask AI coach" icon={Sparkles} onPress={() => router.push('/discover')} />
           </View>
         </Card>
       </FadeIn>
