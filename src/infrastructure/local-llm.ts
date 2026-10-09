@@ -2,6 +2,7 @@
 // Free forever, works offline, and quiz answers never leave the device.
 import * as FileSystem from 'expo-file-system/legacy';
 import type { LlamaContext } from 'llama.rn';
+import { AppState } from 'react-native';
 
 import type { InvokeCoach } from '@/application/coach';
 import type { AiModel } from '@/domain/types';
@@ -59,17 +60,27 @@ function context(m: AiModel): Promise<LlamaContext> {
     // Imported lazily: a phone without a llama.cpp build for its CPU falls back instead of crashing at launch.
     const ctx = import('llama.rn').then((llama) => llama.initLlama({ model: pathFor(m), n_ctx: 2048, use_mlock: false }));
     // A failed load must not be cached, or every later request would fail too.
-    ctx.catch(() => (loaded = null));
+    ctx.catch(() => {
+      if (loaded?.ctx === ctx) loaded = null;
+    });
     loaded = { model: m, ctx };
   }
   return loaded.ctx;
 }
 
+async function unload() {
+  const current = loaded;
+  loaded = null;
+  await current?.ctx.then((c) => c.release()).catch(() => {});
+}
+
+// The model holds ~1 GB of RAM; freeing it in the background keeps Android from killing STILL.
+AppState.addEventListener('change', (s) => {
+  if (s === 'background') void unload();
+});
+
 export async function remove(m: AiModel) {
-  if (loaded?.model === m) {
-    await loaded.ctx.then((c) => c.release()).catch(() => {});
-    loaded = null;
-  }
+  if (loaded?.model === m) await unload();
   await FileSystem.deleteAsync(pathFor(m), { idempotent: true });
   await FileSystem.deleteAsync(`${pathFor(m)}.part`, { idempotent: true });
 }
