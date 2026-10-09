@@ -1,0 +1,50 @@
+# The checking loop: every push, every pull request, and nightly, so drift in
+# dependencies or upstream services shows up even on quiet days.
+name: CI
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Lint
+        run: npm run lint
+      - name: Unit tests
+        run: npx jest --ci --coverage
+      - name: Database migrations and access rules (PGlite)
+        run: npm run test:db
+      - name: Hobby seed matches the app catalogue
+        run: npm run db:hobbies && git diff --exit-code supabase/migrations
+      - name: Expo doctor
+        run: npx expo-doctor
+      - name: Production Android bundle
+        run: npx expo export --platform android --output-dir dist
+      - name: Bundle size report
+        run: |
+          size=$(du -k dist/_expo/static/js/android/*.hbc | cut -f1)
+          echo "Android JS bundle: ${size} KB" | tee -a "$GITHUB_STEP_SUMMARY"
+          test "$size" -lt 12000
+      - name: Edge Function typecheck (Deno)
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check supabase/functions/coach/index.ts
