@@ -140,7 +140,7 @@ export default function Onboarding() {
         </Text>
       </View>
 
-      <FadeIn key={i} style={{ gap: space.xl, flex: 1 }}>
+      <FadeIn key={i} style={{ gap: space.xl, flexGrow: 1 }}>
         <View style={{ gap: space.sm }}>
           <Text variant="title">{step.title}</Text>
           {step.body ? <Text tone="muted">{step.body}</Text> : null}

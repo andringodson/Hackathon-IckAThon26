@@ -1,5 +1,5 @@
 import { createContext, use, useEffect, useMemo, type ReactNode } from 'react';
-import { Appearance, useColorScheme } from 'react-native';
+import { Appearance, Platform, useColorScheme } from 'react-native';
 
 import type { ThemePreference } from '@/domain/types';
 
@@ -18,8 +18,9 @@ export function ThemeProvider({ preference, children }: { preference: ThemePrefe
   const scheme = preference === 'system' ? (system === 'dark' ? 'dark' : 'light') : preference;
 
   // Keeps native UI (alerts, keyboard, date pickers) in the same mode as the app.
+  // Web has no native UI to sync and no setColorScheme.
   useEffect(() => {
-    Appearance.setColorScheme(preference === 'system' ? 'unspecified' : preference);
+    if (Platform.OS !== 'web') Appearance.setColorScheme(preference === 'system' ? 'unspecified' : preference);
   }, [preference]);
 
   const value = useMemo(() => ({ scheme, colors: palettes[scheme] }), [scheme]);
