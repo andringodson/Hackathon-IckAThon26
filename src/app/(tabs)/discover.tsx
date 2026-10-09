@@ -85,9 +85,14 @@ export default function Discover() {
   return (
     <Screen tabs>
       <View style={{ gap: space.sm }}>
-        <Text variant="display">Discover</Text>
+        <Text variant="caption" tone="faint">
+          Discover
+        </Text>
+        <Text variant="display">AI Hobby Coach</Text>
         <Text tone="muted">A few questions, then three things worth fifteen minutes.</Text>
       </View>
+
+      {!aiOn ? <AiCoachCard /> : null}
 
       {step !== null ? (
         <Quiz
@@ -146,7 +151,7 @@ export default function Discover() {
             <Button variant="quiet" label="Change my answers" icon={SlidersHorizontal} onPress={() => setStep(0)} />
           </View>
 
-          <AiCoachCard />
+          {aiOn ? <AiCoachCard /> : null}
 
           {saved.length ? (
             <View>

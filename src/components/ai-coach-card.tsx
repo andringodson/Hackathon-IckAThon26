@@ -13,7 +13,7 @@ import { space } from '@/theme/tokens';
 
 const MODEL_OPTIONS = (['best', 'light'] as const).map((value) => ({ value, label: MODELS[value].detail }));
 
-/** Set up and control the on-device AI coach. Renders nothing where on-device AI is unavailable. */
+/** Set up and control the on-device AI coach. Where it can't run (web), explains where it does. */
 export function AiCoachCard() {
   const { snapshot } = useStore();
   const actions = useActions();
@@ -26,7 +26,17 @@ export function AiCoachCard() {
     void refreshModels();
   }, []);
 
-  if (!localAiSupported) return null;
+  if (!localAiSupported) {
+    return (
+      <Card>
+        <SectionLabel>AI coach · on your phone</SectionLabel>
+        <Text tone="muted">
+          In the Android app, an open-source model (Qwen3.5) personalises these suggestions right on your phone. Free,
+          offline and private. Here you see the instant on-device matches.
+        </Text>
+      </Card>
+    );
+  }
 
   return (
     <Card>
