@@ -10,7 +10,8 @@ on:
 
 concurrency:
   group: android-apk
-  cancel-in-progress: true
+  # Queue instead of cancel, so a build in progress still publishes and the newer one replaces it.
+  cancel-in-progress: false
 
 permissions:
   contents: write

@@ -4,6 +4,17 @@
 
 STILL helps students and young adults swap unplanned scrolling for small, real hobbies. It doesn't block apps. When you notice you're scrolling, it gives you something better to do with those minutes, makes starting take fifteen minutes, and keeps track of what you've won back.
 
+<p>
+  <img src="docs/screenshots/01-welcome.png" width="160" alt="Welcome screen: Less scrolling. More living.">
+  <img src="docs/screenshots/03-home.png" width="160" alt="Home: greeting, featured hobby and Start 15 minutes">
+  <img src="docs/screenshots/04-discover.png" width="160" alt="Discover: three hobby suggestions with why they fit">
+  <img src="docs/screenshots/05-timer.png" width="160" alt="Start: focused 15-minute timer with checklist">
+  <img src="docs/screenshots/07-progress.png" width="160" alt="Progress: week chart and time reclaimed estimate">
+  <img src="docs/screenshots/10-settings-light.png" width="160" alt="Settings in light mode">
+</p>
+
+**Demo video (48 s):** [STILL-demo.mp4](../../releases/download/demo-v1/STILL-demo.mp4)
+
 Built by Team Phantom Troupe for **Ick-a-thon 2026** (IEEE WIE, SSN) on the problem *"Doomscrolling steals youth's free time, with no easy way out."*
 
 ## Install on your phone

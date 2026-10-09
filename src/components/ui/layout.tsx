@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -9,7 +9,7 @@ import {
   type ViewProps,
   type ViewStyle,
 } from 'react-native';
-import Animated, { Keyframe, ReduceMotion } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/theme/theme';
@@ -78,20 +78,23 @@ export function Rule() {
   return <View style={{ height: hairline, backgroundColor: colors.border }} />;
 }
 
-/** Fades content in with a small lift. Skipped automatically when Reduce Motion is on. */
+/**
+ * Fades content in with a small lift on mount. Animates only opacity and transform, so it never
+ * shifts layout, and it is skipped entirely when Reduce Motion is on.
+ */
 export function FadeIn({ index = 0, style, children }: { index?: number; style?: StyleProp<ViewStyle>; children: ReactNode }) {
-  const entering = new Keyframe({
-    0: { opacity: 0, transform: [{ translateY: motion.enterOffset }] },
-    100: { opacity: 1, transform: [{ translateY: 0 }], easing: motion.easeOut },
-  })
-    .duration(motion.enterMs)
-    .delay(index * motion.staggerMs)
-    .reduceMotion(ReduceMotion.System);
-  return (
-    <Animated.View entering={entering} style={style}>
-      {children}
-    </Animated.View>
-  );
+  const reduceMotion = useReducedMotion();
+  const shown = useSharedValue(reduceMotion ? 1 : 0);
+  useEffect(() => {
+    if (!reduceMotion) {
+      shown.set(withDelay(index * motion.staggerMs, withTiming(1, { duration: motion.enterMs, easing: motion.easeOut })));
+    }
+  }, [index, reduceMotion, shown]);
+  const animated = useAnimatedStyle(() => ({
+    opacity: shown.get(),
+    transform: [{ translateY: (1 - shown.get()) * motion.enterOffset }],
+  }));
+  return <Animated.View style={[style, animated]}>{children}</Animated.View>;
 }
 
 /** Thin progress line. `value` is 0..1. */
