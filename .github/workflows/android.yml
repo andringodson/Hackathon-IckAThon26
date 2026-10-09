@@ -30,7 +30,9 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
-      - run: npm ci
+      - run: npm ci --ignore-scripts
+      - name: Fetch llama.cpp native libraries (checksum-verified by llama.rn)
+        run: node node_modules/llama.rn/install/download-native-artifacts.js
       - name: Generate the native Android project
         run: npx expo prebuild --platform android --no-install
         env:

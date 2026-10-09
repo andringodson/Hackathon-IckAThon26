@@ -43,7 +43,7 @@ test('falls back to local when the AI fails or invents a hobby', async () => {
   const failed = await getRecommendations(answers, [], async () => {
     throw new Error('offline');
   });
-  expect(failed.fallbackReason).toMatch(/matched on your phone/);
+  expect(failed.fallbackReason).toMatch(/matched without it/);
   expect(failed.recommendations).toHaveLength(3);
 
   const invented = await getRecommendations(answers, [], async () => ({

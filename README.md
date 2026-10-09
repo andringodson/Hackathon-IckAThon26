@@ -40,18 +40,17 @@ src/
   domain/           pure, tested rules: catalogue, ranking, timer, sessions, progress, challenges, dates
   application/      store (state + actions), coach use case, active timer session, reminders
   data/             snapshot, local persistence, outbox sync and merge (data-provider pattern)
-  infrastructure/   Supabase client and provider, secure storage, notifications, social, AI invoker
+  infrastructure/   Supabase client and provider, secure storage, notifications, social, on-device LLM (local-llm.ts)
 supabase/
   migrations/       schema, row-level security, social functions, generated hobby catalogue
-  functions/coach/  Gemini Edge Function; _shared/ holds the schema validator used by app and server
 scripts/            hobby seed generator, PGlite database tests
 ```
 
 **Local-first, low latency.** Screens read an in-memory snapshot, so every tap responds immediately and the app works offline and without an account. Changes are written to AsyncStorage with a latest-wins writer. When you're signed in, they also go to Supabase through an ordered outbox that retries when the app returns to the foreground. Signing in merges guest progress into the account.
 
-**AI coach.** Ranking and filtering by time, budget, place, company and skill always run on the phone and are deterministic. When you're signed in and have turned on the AI coach, the Edge Function asks Gemini to choose three of the already-compatible candidates and write the reason and starter task. Only your quiz answers are sent, never your name or screen time. The reply must pass the same schema validator on the server and in the app. Any failure falls back to on-device suggestions.
+**AI coach, on the phone.** Ranking and filtering by time, budget, place, company and skill always run on the phone and are deterministic, so suggestions appear instantly. The AI coach then personalises them with an open-source model, **Qwen3.5 2B** (Apache 2.0), or **Qwen3.5 0.8B** for older phones, running through llama.cpp ([llama.rn](https://github.com/mybigday/llama.rn)). It is a one-time download from Hugging Face. After that it is free forever, works offline, needs no account or API key, and your answers never leave the device. Generation is grammar-constrained to a JSON schema whose `hobbyId` can only be one of the compatible candidates, and the result is validated again before it is shown. If anything fails, the on-device suggestions stay.
 
-**Security.** No secrets ship in the app. The publishable Supabase key is public by design and every personal table has owner-only row-level security. Auth tokens are stored in SecureStore, chunked to fit its size limit. The Edge Function authenticates the caller, caps request size, rate-limits per user, and times out.
+**Security.** No secrets ship in the app, and there are no paid APIs. The publishable Supabase key is public by design, and every personal table has owner-only row-level security. Auth tokens are stored in SecureStore, chunked to fit its size limit. Model downloads are written to a temporary file first, size-checked, and only then used.
 
 **Design.** Calm and editorial: Instrument Serif for display, the system font for body, fine borders, generous space. All colours are neutral placeholders in `src/theme/tokens.ts`; change them there to rebrand the whole app. Motion follows Emil Kowalski's rules: press feedback at 0.97 scale, entrances fade in with an 8px lift and short stagger, ease-out under 300 ms, no animation on tab switches, and Reduce Motion is honoured.
 
@@ -62,20 +61,18 @@ npm install
 npx expo start          # scan the QR code with Expo Go (Android or iOS)
 ```
 
-It runs in demo mode with no configuration: no account, no AI, everything on the phone.
+It runs with no configuration: no account needed, everything on the phone. The AI coach needs the APK (or another native build), because llama.cpp can't run in Expo Go or the browser. Open Discover and tap **Download the AI coach**.
 
-## Connect Supabase and Gemini (optional)
+## Accounts and friends (optional)
 
-1. Create a free Supabase project and a free Gemini API key.
-2. Apply the schema and deploy the function:
-   ```bash
-   npx supabase link --project-ref <your-ref>
-   npx supabase db push
-   npx supabase functions deploy coach
-   npx supabase secrets set GEMINI_API_KEY=<key>
-   ```
-3. Copy `.env.example` to `.env.local` and fill in `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY`.
-4. For the APK build, add the same two values as GitHub Actions secrets.
+Accounts, backup and real friends use Supabase (open source, free plan). Without it, the app works fully on one phone and Arena uses labelled sample people.
+
+```bash
+npx supabase link --project-ref <your-ref>
+npx supabase db push
+```
+
+Then set `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` in `.env.local`, and as GitHub Actions secrets for the APK.
 
 ## Quality checks
 
@@ -86,11 +83,12 @@ npm run test:e2e        # with `npx expo start --web --port 8098` running: full 
 npm run db:hobbies      # regenerate the hobby seed after editing src/domain/catalog.ts
 ```
 
-CI runs all of this on every push, every pull request and nightly, plus `expo-doctor`, a production Android bundle with a size budget, and a Deno typecheck of the Edge Function.
+CI runs all of this on every push, every pull request and nightly, plus `expo-doctor`, a production Android bundle with a size budget, and the full browser journey in dark and light mode, with screenshots uploaded as artifacts.
 
 ## Known limits
 
 - Scroll time is self-reported. Reading other apps' usage needs platform screen-time APIs (Android UsageStats, iOS Screen Time), which is the next step.
 - The APK is signed with the debug key, which is fine for sideloading. Play Store releases need a real keystore or EAS Build.
 - Friend features need Supabase configured. Without it, Arena uses labelled sample people.
+- The AI coach needs about 1.6 GB of free RAM for the 2B model, or about 0.8 GB for 0.8B. Speed depends on the phone. Suggestions never wait for it.
 - Deleting data removes all records. Deleting the login itself needs a server-side admin call, which isn't built yet.

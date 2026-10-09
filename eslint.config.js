@@ -5,7 +5,7 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*', 'android/*', 'ios/*', 'supabase/functions/coach/*', 'coverage/*'],
+    ignores: ['dist/*', 'android/*', 'ios/*', 'coverage/*'],
   },
   {
     // HTML entity escaping is a web concern; React Native <Text> renders apostrophes as-is.

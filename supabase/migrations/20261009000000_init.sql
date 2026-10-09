@@ -174,14 +174,6 @@ create table public.challenge_participants (
 );
 create index challenge_participants_user_idx on public.challenge_participants (user_id);
 
--- AI rate limiting: one row per coach request, readable only by its owner.
-create table public.ai_requests (
-  id bigint generated always as identity primary key,
-  user_id uuid not null references public.profiles (id) on delete cascade,
-  created_at timestamptz not null default now()
-);
-create index ai_requests_user_time_idx on public.ai_requests (user_id, created_at desc);
-
 -- Helpers ----------------------------------------------------------------------------
 
 create or replace function public.are_friends(a uuid, b uuid) returns boolean
@@ -217,7 +209,6 @@ alter table public.daily_goals enable row level security;
 alter table public.friendships enable row level security;
 alter table public.challenges enable row level security;
 alter table public.challenge_participants enable row level security;
-alter table public.ai_requests enable row level security;
 
 -- Connected people can read each other's profile row (name, time zone, invite code).
 -- Activity, scroll time and preferences live in owner-only tables and stay private.
@@ -241,11 +232,6 @@ create policy "sessions: own" on public.hobby_sessions for all to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
 create policy "daily_goals: own" on public.daily_goals for all to authenticated
   using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
-
-create policy "ai_requests: read own" on public.ai_requests for select to authenticated
-  using (user_id = (select auth.uid()));
-create policy "ai_requests: insert own" on public.ai_requests for insert to authenticated
-  with check (user_id = (select auth.uid()));
 
 -- Friend requests go through send_friend_request(); members can read, accept (recipient) or remove.
 create policy "friendships: read own" on public.friendships for select to authenticated

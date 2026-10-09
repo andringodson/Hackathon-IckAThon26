@@ -1,4 +1,4 @@
-// Shared by the Edge Function (Deno) and the app (Metro). Keep it dependency-free.
+// Validates what the AI coach returns before anything reaches the screen.
 
 export interface CoachSuggestion {
   hobbyId: string;
@@ -19,35 +19,6 @@ export interface CoachRequest {
 
 const isText = (v: unknown, max: number): v is string =>
   typeof v === 'string' && v.trim().length > 0 && v.length <= max;
-
-const ENUMS = {
-  budget: ['free', 'low', 'flexible'],
-  place: ['indoor', 'outdoor', 'either'],
-  company: ['solo', 'social', 'either'],
-  skill: ['beginner', 'experienced'],
-};
-
-export function parseCoachRequest(body: unknown): CoachRequest | null {
-  if (!body || typeof body !== 'object') return null;
-  const b = body as Record<string, unknown>;
-  const ids = b.candidateIds;
-  const interests = b.interests;
-  if (!Array.isArray(ids) || ids.length < 3 || ids.length > 8 || !ids.every((id) => isText(id, 40))) return null;
-  if (!Array.isArray(interests) || interests.length > 8 || !interests.every((i) => isText(i, 20))) return null;
-  if (typeof b.availableMinutes !== 'number' || ![5, 10, 15, 30, 60].includes(b.availableMinutes)) return null;
-  for (const [key, allowed] of Object.entries(ENUMS)) {
-    if (!allowed.includes(b[key] as string)) return null;
-  }
-  return {
-    candidateIds: [...new Set(ids as string[])],
-    interests: interests as string[],
-    availableMinutes: b.availableMinutes,
-    budget: b.budget as string,
-    place: b.place as string,
-    company: b.company as string,
-    skill: b.skill as string,
-  };
-}
 
 /** Accepts exactly three distinct suggestions drawn from the allowed hobby ids. */
 export function parseCoachResponse(data: unknown, allowedIds: string[]): CoachSuggestion[] | null {

@@ -1,20 +1,21 @@
 import { router } from 'expo-router';
 import { RefreshCw, SlidersHorizontal, Sparkles } from 'lucide-react-native';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
+import { useAiModels } from '@/application/ai-model';
 import { getRecommendations } from '@/application/coach';
 import { useActions, useStore } from '@/application/store';
+import { AiCoachCard } from '@/components/ai-coach-card';
 import { HobbyRow, RecommendationCard } from '@/components/hobby';
 import { QUIZ, answerText } from '@/components/quiz';
 import { Button } from '@/components/ui/button';
-import { ToggleRow } from '@/components/ui/controls';
 import { Card, FadeIn, Screen, SectionLabel, styles as layout } from '@/components/ui/layout';
 import { Text } from '@/components/ui/text';
 import { HOBBIES } from '@/domain/catalog';
 import { localRecommendations, type CoachAnswers } from '@/domain/ranking';
 import type { Recommendation } from '@/domain/types';
-import { coachInvoker } from '@/infrastructure/coach-invoker';
+import { localCoach, preload } from '@/infrastructure/local-llm';
 import { useTheme } from '@/theme/theme';
 import { radius, space } from '@/theme/tokens';
 
@@ -29,7 +30,7 @@ const pickAnswers = ({ interests, availableMinutes, budget, place, company, skil
 });
 
 export default function Discover() {
-  const { snapshot, account } = useStore();
+  const { snapshot } = useStore();
   const actions = useActions();
   const p = snapshot.preferences;
 
@@ -37,20 +38,35 @@ export default function Discover() {
   const [step, setStep] = useState<number | null>(p.interests.length ? null : 0);
   const [recs, setRecs] = useState<Recommendation[]>(() => localRecommendations(HOBBIES, pickAnswers(p)));
   const [shown, setShown] = useState<string[]>(() => recs.map((r) => r.hobby.id));
-  const [loading, setLoading] = useState(false);
+  const [personalising, setPersonalising] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const request = useRef(0);
+  const ai = useAiModels();
+  const aiOn = p.aiConsent && ai.ready[p.aiModel];
 
-  const aiAvailable = !!coachInvoker && !!account;
-  const invoke = aiAvailable && p.aiConsent ? coachInvoker : null;
+  // Load the model while the user reads, so personalising starts without a cold start.
+  useEffect(() => {
+    if (aiOn) preload(p.aiModel);
+  }, [aiOn, p.aiModel]);
 
+  // On-device ranking answers instantly; the AI then rewrites the same kind of picks in the background.
   async function suggest(a: CoachAnswers, exclude: string[]) {
-    setLoading(true);
+    const id = ++request.current;
+    const local = localRecommendations(HOBBIES, a, exclude);
+    setRecs(local);
+    setShown((s) => [...new Set([...exclude, ...s, ...local.map((r) => r.hobby.id)])]);
     setNote(null);
-    const result = await getRecommendations(a, exclude, invoke);
-    setRecs(result.recommendations);
-    setShown((s) => [...new Set([...exclude, ...s, ...result.recommendations.map((r) => r.hobby.id)])]);
+    if (!aiOn) return;
+    setPersonalising(true);
+    const result = await getRecommendations(a, exclude, localCoach(p.aiModel));
+    // A newer request (refresh, new answers) wins; never let a slow answer overwrite it.
+    if (id !== request.current) return;
+    setPersonalising(false);
     setNote(result.fallbackReason);
-    setLoading(false);
+    if (!result.fallbackReason) {
+      setRecs(result.recommendations);
+      setShown((s) => [...new Set([...s, ...result.recommendations.map((r) => r.hobby.id)])]);
+    }
   }
 
   function finishQuiz() {
@@ -83,29 +99,22 @@ export default function Discover() {
         />
       ) : (
         <>
-          {aiAvailable ? (
-            <Card>
-              <ToggleRow
-                label="Use the AI coach"
-                detail="Sends only your quiz answers to Google Gemini to write suggestions. Never your name or screen time."
-                value={p.aiConsent}
-                onChange={(aiConsent) => actions.updatePreferences({ aiConsent })}
-              />
-            </Card>
-          ) : null}
-
           {note ? (
             <Text variant="small" tone="muted" accessibilityLiveRegion="polite">
               {note}
             </Text>
           ) : null}
 
-          {loading ? (
-            <View style={[layout.row, { paddingVertical: space.xl }]} accessibilityLiveRegion="polite">
+          {personalising ? (
+            <View style={layout.row} accessibilityLiveRegion="polite">
               <ActivityIndicator />
-              <Text tone="muted">Thinking about what would suit you…</Text>
+              <Text variant="small" tone="muted">
+                Personalising with the AI coach on your phone…
+              </Text>
             </View>
-          ) : recs.length ? (
+          ) : null}
+
+          {recs.length ? (
             recs.map((rec, i) => (
               <FadeIn key={rec.hobby.id} index={i}>
                 <RecommendationCard
@@ -128,14 +137,16 @@ export default function Discover() {
               variant="secondary"
               label="Show three others"
               icon={RefreshCw}
-              disabled={loading || !recs.length}
+              disabled={!recs.length}
               onPress={() => void suggest(answers, shown)}
             />
-            {invoke && recs[0]?.source === 'local' ? (
-              <Button variant="secondary" label="Ask the AI coach" icon={Sparkles} disabled={loading} onPress={() => void suggest(answers, [])} />
+            {aiOn && recs[0]?.source === 'local' && !personalising ? (
+              <Button variant="secondary" label="Personalise with AI" icon={Sparkles} onPress={() => void suggest(answers, [])} />
             ) : null}
             <Button variant="quiet" label="Change my answers" icon={SlidersHorizontal} onPress={() => setStep(0)} />
           </View>
+
+          <AiCoachCard />
 
           {saved.length ? (
             <View>

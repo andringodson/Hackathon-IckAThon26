@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Linking, Share, View } from 'react-native';
 
 import { useActions, useStore } from '@/application/store';
+import { AiCoachCard } from '@/components/ai-coach-card';
 import { BASELINE_OPTIONS, REMINDER_OPTIONS } from '@/components/quiz';
 import { Button } from '@/components/ui/button';
 import { ChipGroup, Field, IconButton, MultiChipGroup, ToggleRow } from '@/components/ui/controls';
@@ -191,15 +192,9 @@ export default function Settings() {
           value={p.privacyMode}
           onChange={(privacyMode) => actions.updatePreferences({ privacyMode })}
         />
-        {supabase ? (
-          <ToggleRow
-            label="AI coach"
-            detail="When on, your quiz answers (not your name or screen time) go to Google Gemini to write suggestions."
-            value={p.aiConsent}
-            onChange={(aiConsent) => actions.updatePreferences({ aiConsent })}
-          />
-        ) : null}
       </Card>
+
+      <AiCoachCard />
 
       <Card>
         <SectionLabel>Your data</SectionLabel>

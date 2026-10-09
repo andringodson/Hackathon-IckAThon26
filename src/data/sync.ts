@@ -40,7 +40,7 @@ export async function flush(remote: RemoteProvider, outbox: Op[]): Promise<Op[]>
 
 /**
  * Combines device data with an account after sign-in. Records are unioned by id, so guest
- * progress is kept. Server preferences win, except the theme, which belongs to this device.
+ * progress is kept. Server preferences win, except the theme and AI model, which belong to this device.
  * Returns the merged snapshot and the ops that upload what only this device had.
  */
 export function mergeRemote(local: Snapshot, remote: RemoteData): { snapshot: Snapshot; upload: Op[] } {
@@ -52,7 +52,7 @@ export function mergeRemote(local: Snapshot, remote: RemoteData): { snapshot: Sn
   const savedHobbyIds = [...new Set([...remote.savedHobbyIds, ...local.savedHobbyIds])];
 
   const preferences = remote.preferences
-    ? { ...remote.preferences, theme: local.preferences.theme, onboarded: true }
+    ? { ...remote.preferences, theme: local.preferences.theme, aiModel: local.preferences.aiModel, onboarded: true }
     : local.preferences;
 
   const upload: Op[] = [

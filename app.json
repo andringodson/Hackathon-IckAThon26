@@ -31,6 +31,8 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
+      "llama.rn",
+      "expo-file-system",
       [
         "expo-notifications",
         {

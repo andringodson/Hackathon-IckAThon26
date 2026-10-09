@@ -1,4 +1,4 @@
-import { parseCoachRequest, parseCoachResponse } from '../../../supabase/functions/_shared/coach-schema';
+import { parseCoachResponse } from '../coach-schema';
 
 const ids = ['sketching', 'journaling', 'rhythm', 'stretching'];
 const good = {
@@ -25,26 +25,3 @@ test.each([
   expect(parseCoachResponse(data, ids)).toBeNull();
 });
 
-const request = {
-  candidateIds: ids,
-  interests: ['music'],
-  availableMinutes: 15,
-  budget: 'free',
-  place: 'either',
-  company: 'solo',
-  skill: 'beginner',
-};
-
-test('accepts a well-formed request', () => {
-  expect(parseCoachRequest(request)).toEqual(request);
-});
-
-test.each([
-  ['missing body', null],
-  ['too few candidates', { ...request, candidateIds: ['a', 'b'] }],
-  ['odd minutes', { ...request, availableMinutes: 7 }],
-  ['unknown budget', { ...request, budget: 'unlimited' }],
-  ['huge interest', { ...request, interests: ['x'.repeat(500)] }],
-])('rejects %s', (_, body) => {
-  expect(parseCoachRequest(body)).toBeNull();
-});

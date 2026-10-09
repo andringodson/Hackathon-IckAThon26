@@ -19,6 +19,7 @@ export type Company = 'solo' | 'social' | 'either';
 export type Skill = 'beginner' | 'experienced';
 export type Difficulty = 'easy' | 'steady' | 'stretch';
 export type ThemePreference = 'system' | 'light' | 'dark';
+export type AiModel = 'best' | 'light';
 
 export interface Preferences {
   name: string;
@@ -38,7 +39,9 @@ export interface Preferences {
   privacyMode: boolean;
   shareProgress: boolean;
   leaderboardOptIn: boolean;
+  /** Use the on-device AI coach once its model is downloaded. */
   aiConsent: boolean;
+  aiModel: AiModel;
   theme: ThemePreference;
   onboarded: boolean;
 }

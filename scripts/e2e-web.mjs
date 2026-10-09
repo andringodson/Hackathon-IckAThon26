@@ -1,11 +1,11 @@
 // Usage: npx expo start --web --port 8098, then: node scripts/e2e-web.mjs http://localhost:8098 <screenshot-dir> [dark|light]
-// Needs playwright-core and Microsoft Edge (or set channel to 'chrome').
+// Needs playwright-core and Microsoft Edge, or E2E_CHANNEL=chrome.
 // End-to-end smoke of the primary journey on the web build, in a phone-sized Edge window:
 // Welcome -> Onboarding -> Home -> Discover -> choose hobby -> complete activity -> Progress updated.
 import { chromium } from 'playwright-core';
 
 const [, , url, shots, scheme = 'dark'] = process.argv;
-const browser = await chromium.launch({ channel: 'msedge' });
+const browser = await chromium.launch({ channel: process.env.E2E_CHANNEL ?? 'msedge' });
 const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, colorScheme: scheme });
 const errors = [];
 page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
@@ -80,3 +80,5 @@ try {
   console.log(errors.length ? `errors:\n${[...new Set(errors)].slice(0, 15).join('\n')}` : 'no runtime errors');
   await browser.close();
 }
+// Uncaught exceptions fail the run; React dev warnings are reported but tolerated.
+if (errors.some((e) => e.startsWith('pageerror'))) process.exit(1);

@@ -23,7 +23,8 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
+      # Lifecycle scripts are off: llama.rn's native download is only needed for the APK build.
+      - run: npm ci --ignore-scripts
       - name: Typecheck
         run: npm run typecheck
       - name: Lint
@@ -43,8 +44,31 @@ jobs:
           size=$(du -k dist/_expo/static/js/android/*.hbc | cut -f1)
           echo "Android JS bundle: ${size} KB" | tee -a "$GITHUB_STEP_SUMMARY"
           test "$size" -lt 12000
-      - name: Edge Function typecheck (Deno)
-        uses: denoland/setup-deno@v2
+
+  journey:
+    # Clicks through Welcome, onboarding, Home, Discover, the timer, saving and Progress in a phone-sized Chrome.
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          deno-version: v2.x
-      - run: deno check supabase/functions/coach/index.ts
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Start the web build
+        run: |
+          npx expo start --web --port 8098 > expo.log 2>&1 &
+          for i in $(seq 1 90); do curl -sf http://localhost:8098 > /dev/null && break; sleep 2; done
+      - name: Run the journey (dark and light)
+        env:
+          E2E_CHANNEL: chrome
+        run: |
+          mkdir -p shots
+          node scripts/e2e-web.mjs http://localhost:8098 shots dark
+          node scripts/e2e-web.mjs http://localhost:8098 shots light
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: journey-screenshots
+          path: shots

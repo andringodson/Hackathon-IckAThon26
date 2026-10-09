@@ -42,6 +42,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   shareProgress: false,
   leaderboardOptIn: false,
   aiConsent: false,
+  aiModel: 'best',
   theme: 'system',
   onboarded: false,
 };
@@ -88,6 +89,7 @@ export function normalize(raw: unknown): Snapshot {
       ? p.availableMinutes
       : DEFAULT_PREFERENCES.availableMinutes,
     materials: arr(p.materials, isStr),
+    aiModel: p.aiModel === 'light' ? 'light' : 'best',
     reminderTimes: arr(p.reminderTimes, isStr).filter((t) => /^\d{2}:\d{2}$/.test(t)),
   };
   return {

@@ -1,10 +1,10 @@
 import { HOBBIES } from '@/domain/catalog';
 import { localRecommendations, rankHobbies, type CoachAnswers } from '@/domain/ranking';
-import type { Recommendation } from '@/domain/types';
+import type { Hobby, Recommendation } from '@/domain/types';
 
-import { parseCoachResponse, type CoachRequest } from '../../supabase/functions/_shared/coach-schema';
+import { parseCoachResponse, type CoachRequest } from '@/domain/coach-schema';
 
-export type InvokeCoach = (body: CoachRequest) => Promise<unknown>;
+export type InvokeCoach = (body: CoachRequest, candidates: Hobby[]) => Promise<unknown>;
 
 export interface CoachResult {
   recommendations: Recommendation[];
@@ -38,7 +38,7 @@ export async function getRecommendations(
       place: answers.place,
       company: answers.company,
       skill: answers.skill,
-    });
+    }, candidates);
     const suggestions = parseCoachResponse(data, candidates.map((h) => h.id));
     if (!suggestions) throw new Error('invalid');
     return {
@@ -54,7 +54,7 @@ export async function getRecommendations(
   } catch {
     return {
       recommendations: local,
-      fallbackReason: "The AI coach couldn't answer just now, so these were matched on your phone.",
+      fallbackReason: "The AI coach couldn't finish this time, so these were matched without it.",
     };
   }
 }
