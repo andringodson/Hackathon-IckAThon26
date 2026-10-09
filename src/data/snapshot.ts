@@ -42,7 +42,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   shareProgress: false,
   leaderboardOptIn: false,
   aiConsent: false,
-  aiModel: 'best',
+  // Default to the free, open-source 0.8B model for faster downloads and lower RAM usage.
+  aiModel: 'light',
   theme: 'system',
   onboarded: false,
 };
